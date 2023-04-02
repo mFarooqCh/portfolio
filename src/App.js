@@ -1,32 +1,42 @@
-import { useState } from 'react';
 import './App.css';
-import Main from './components/Main';
-import Appbar from './components/Appbar';
+import { useState } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import SocialLinksWidget from './widgets/SocialLinksWidget';
-
+import Layout from './components/Layout';
 export default function App() {
-  const [themeState, settheme] = useState(false);
+  const [theme, settheme] = useState(false);
 
-  const toggle = () => {
-    settheme(themeState == true ? false : true);
-  };
-
-  //insi de this, we can override any object's value with our own.
+  //inside this, we can override any object's value with our own.
   const customTheme = createTheme({
+    typography: {
+      fontFamily: "'Lato', sans-serif",
+    },
     palette: {
-      mode: themeState ? 'dark' : 'light',
+      mode: theme ? 'dark' : 'light',
+      blue: {
+        main: '#1976d2',
+        light: '#729ED9',
+        dark: '#174793',
+        contrastText: '#fff',
+      },
+      golden: {
+        main: '#FCC100',
+        light: '#FFDF01',
+        dark: '#F1A300',
+        contrastText: '#386CB9',
+      },
     },
   });
+
+  const toggle = () => {
+    settheme(theme == true ? false : true);
+  };
 
   return (
     <div className='App'>
       <ThemeProvider theme={customTheme}>
         <CssBaseline />
-        <Main></Main>
-        <Appbar toggle={toggle} themeState={themeState}></Appbar>
-        <SocialLinksWidget className='fab' />
+        <Layout toggle={toggle} themeMode={theme} />
       </ThemeProvider>
     </div>
   );

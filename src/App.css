@@ -1,0 +1,54 @@
+.fab {
+  margin: 0px;
+  top: auto;
+  right: 20px;
+  bottom: 20px;
+  left: auto;
+  position: fixed;
+}
+
+.headerWrapper {
+  width: 100%;
+  min-height: 100vh;
+  height: auto;
+  background-image: linear-gradient(
+      to left,
+      rgba(3, 138, 255, 0.5),
+      rgba(255, 223, 1, 1)
+    ),
+    url('./assets/images/portraite-007.JPG');
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.deacription {
+  width: 100%;
+  min-height: 100vh;
+  padding: 0px 25px;
+  height: auto;
+  display: flex;
+  flex-flow: column wrap;
+  justify-content: center;
+}
+
+.deacription .title {
+}
+
+.deacription .subTitle {
+}
+
+@media only screen and (max-width: 600px) {
+  .headerWrapper {
+    width: 100%;
+    min-height: 100vh;
+    height: auto;
+    background-image: linear-gradient(
+        to left,
+        rgba(3, 138, 255, 0.5),
+        rgba(255, 223, 1, 1)
+      ),
+      url('./assets/images/portrate-mobile.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+  }
+}

@@ -11,10 +11,12 @@ import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
-import BrushIcon from '@mui/icons-material/Brush';
+import BrushOutlinedIcon from '@mui/icons-material/BrushOutlined';
 import avatar from '../assets/images/a-avatar-001.jpg';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import LightModeIcon from '@mui/icons-material/LightMode';
+// import DarkModeIcon from '@mui/icons-material/DarkModeIcon';
+// import LightModeIcon from '@mui/icons-material/LightModeIcon';
+import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
+import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 
 const pages = ['About', 'Projects', 'Gallery', 'Contact Me'];
 const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
@@ -39,10 +41,12 @@ const AppNavBar = ({ toggle, themeState }) => {
   };
 
   return (
-    <AppBar position='static'>
+    <AppBar position='fixed' color='primary'>
       <Container maxWidth='xl'>
         <Toolbar disableGutters>
-          <BrushIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
+          <BrushOutlinedIcon
+            sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }}
+          />
           <Typography
             variant='h6'
             noWrap
@@ -51,7 +55,7 @@ const AppNavBar = ({ toggle, themeState }) => {
             sx={{
               mr: 2,
               display: { xs: 'none', md: 'flex' },
-              fontFamily: 'monospace',
+              fontFamily: '',
               fontWeight: 700,
               letterSpacing: '.3rem',
               color: 'inherit',
@@ -97,7 +101,9 @@ const AppNavBar = ({ toggle, themeState }) => {
               ))}
             </Menu>
           </Box>
-          <BrushIcon sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} />
+          <BrushOutlinedIcon
+            sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }}
+          />
           <Typography
             variant='h5'
             noWrap
@@ -107,21 +113,21 @@ const AppNavBar = ({ toggle, themeState }) => {
               mr: 2,
               display: { xs: 'flex', md: 'none' },
               flexGrow: 1,
-              fontFamily: 'monospace',
+              fontFamily: '',
               fontWeight: 700,
               letterSpacing: '.3rem',
               color: 'inherit',
               textDecoration: 'none',
             }}
           >
-            LOGO
+            AA Design
           </Typography>
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+          <Box sx={{ flexGrow: 1, ml: 2, display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
               <Button
                 key={page}
                 onClick={handleCloseNavMenu}
-                sx={{ my: 2, color: 'white', display: 'block' }}
+                sx={{ my: 2, mx: 1, color: 'white', display: 'block' }}
               >
                 {page}
               </Button>
@@ -131,7 +137,11 @@ const AppNavBar = ({ toggle, themeState }) => {
           <Box sx={{ flexGrow: 0 }}>
             <Tooltip title={themeState == true ? 'Light mode' : 'Dark mode'}>
               <IconButton color='inherit' onClick={toggle}>
-                {themeState == true ? <DarkModeIcon /> : <LightModeIcon />}
+                {themeState == true ? (
+                  <DarkModeOutlinedIcon />
+                ) : (
+                  <LightModeOutlinedIcon />
+                )}
               </IconButton>
             </Tooltip>
 
