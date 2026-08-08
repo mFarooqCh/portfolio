@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+.vercel
+.DS_Store
+*.log
+.env*
+
+# ── Internal working documents — deliberately NOT committed ──────────────
+# This repository is PUBLIC. These files contain candid strategy notes,
+# self-assessment, and outreach templates that should not be readable by
+# prospective clients. They stay on the local machine.
+# Back them up somewhere private, not here.
+PLAN.md
+testimonial-requests.md
+content/homepage-copy.md

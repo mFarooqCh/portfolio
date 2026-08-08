@@ -1,0 +1,30 @@
+[
+  {
+    "role": "Senior Software Developer",
+    "company": "XtecSoft",
+    "start": "Jan 2024",
+    "end": "Present",
+    "note": "Architecture and production ownership for an enterprise media platform — cloud infrastructure, security, AI extraction pipelines, and high-throughput file processing."
+  },
+  {
+    "role": "Software Developer",
+    "company": "XtecSoft",
+    "start": "Jan 2023",
+    "end": "Dec 2023",
+    "note": "Cross-cloud transfer services across 11 storage providers, streaming APIs, and legacy .NET migrations."
+  },
+  {
+    "role": "Software Developer (.NET MVC)",
+    "company": "Mangotech",
+    "start": "Apr 2022",
+    "end": "Dec 2022",
+    "note": "Customisable ERP — HR, payroll, and inventory modules, plus queue-based background file processing."
+  },
+  {
+    "role": "Junior Software Developer (.NET)",
+    "company": "ZRG International",
+    "start": "Nov 2020",
+    "end": "Nov 2021",
+    "note": "CMS-based web applications for call centre software, working in an n-tier architecture with Dapper and ADO.NET."
+  }
+]

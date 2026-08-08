@@ -1,0 +1,116 @@
+---
+title: "Cross-cloud file transfer engine across 11 storage providers"
+slug: "cross-cloud-transfer-engine"
+summary: "A transfer engine moving 32K–80K files per operation between 11 storage providers, where a failure at 90% costs only the files that failed — not the run."
+context: "A SaaS platform ingesting and moving large asset sets across customer-owned storage"
+role: "Design and implementation"
+year: "2023"
+stack: [".NET", "C#", "SignalR", "Azure Blob", "AWS S3", "Google Cloud Storage", "Oracle Object Storage", "Box"]
+featured: true
+order: 2
+diagram: "/diagrams/cross-cloud-transfer.svg"
+relatedPosts: []
+---
+
+## The problem
+
+Customers didn't keep their assets in one place. Some of it sat in Azure, some in S3, some in Box,
+some in storage the platform had never been pointed at before — and the platform had to ingest from
+all of it and move assets between all of it, without asking customers to consolidate first.
+
+At 32,000 to 80,000 files per operation, a transfer isn't a request. It's a job that runs for hours,
+and something in it will fail. Networks drop, tokens expire, providers throttle. The naive version
+treats any failure as failure of the whole operation, and a customer who watched a transfer run all
+afternoon before dying at 90% doesn't try again — they open a support ticket.
+
+## Constraints
+
+**Eleven providers, eleven SDKs.** Each with its own auth model, error vocabulary, throttling
+behaviour, and listing semantics.
+
+**Partial failure is the normal case, not the exception.** At this file count, expecting zero failures
+in a run is not a design assumption you get to make. The question was never how to avoid failures but
+what they should cost.
+
+**Progress had to be visible throughout.** A multi-hour job with no feedback is indistinguishable from
+a hung one. Users needed live progress, and 80,000 files couldn't each become a database write to
+provide it.
+
+**Nothing could be lost or silently duplicated.** These are customers' assets. A transfer that
+mostly works is not a working transfer.
+
+## Approach
+
+**A facade over per-provider adapters.** Every provider sits behind one adapter interface —
+`GetHierarchy`, `CreateFolder`, `DownloadFile`, `UploadFile`, `DeleteFile` — and the engine only ever
+talks to that interface. Adding a provider means writing one adapter, not touching the engine.
+
+The operations unified cleanly. Three things didn't, and those are where the per-provider work
+actually lives:
+
+- **Auth.** SAS tokens, IAM roles, service accounts, OAuth flows — there is no common shape, and
+  pretending otherwise just moves the mess somewhere less visible.
+- **Error semantics.** The same underlying failure surfaces as a different exception type on every
+  SDK, and "is this retryable?" has no portable answer. Each adapter has to make that judgment for
+  its own provider.
+- **Throttling.** Providers push back differently, and some barely signal it. Detecting that you're
+  being rate-limited is provider-specific before it can become a common backoff decision.
+
+The useful lesson is that a good abstraction over heterogeneous systems isn't the one that hides the
+most. It's the one that unifies what's genuinely the same and leaves what isn't in a single obvious
+place per provider.
+
+**Failures are per-file, not per-operation.** A file that fails is retried; the rest of the operation
+keeps moving. Failures are collected as the run proceeds rather than aborting it. This is the single
+decision that changed what a failure costs — the difference between "the transfer failed" and "79,997
+files moved, 3 are retrying."
+
+**Progress over SignalR, not the database.** Progress events push to the client over a socket while
+the operation runs, so live progress on an 80,000-file job costs nothing in write load. The database
+records the operation and its outcome, not its every increment.
+
+## Streaming instead of buffering
+
+Alongside the engine, 10+ APIs stream large files and folder contents directly from the providers
+using open-stream responses, with no server-side buffering.
+
+Buffering meant memory scaled with file size: a multi-gigabyte file needed multi-gigabyte memory to
+serve, multiplied by every concurrent request. That caps concurrency at a number set by your largest
+file, and when it's exceeded the process doesn't degrade — it dies.
+
+Streaming made per-request memory roughly flat regardless of file size. Out-of-memory crashes on
+large files stopped happening, and the ceiling on simultaneous transfers rose sharply, because it was
+no longer a function of how big the files happened to be.
+
+## Outcome
+
+**Up to 3 TB and 80,000 files in a single successful operation.** Routine runs sit in the 32K–80K
+file range.
+
+**No files lost.** Across production transfer operations, the engine has not lost a customer file.
+
+**A late failure costs the failed files, not the run.** A failure at 90% used to mean starting over.
+Now it means a handful of files retry while the other 79,000 stay done.
+
+**Concurrency is no longer bounded by file size.** Removing server-side buffering took the memory
+ceiling out of the equation and ended out-of-memory failures on large assets.
+
+## What I'd do differently
+
+**Retry policy should have been per-adapter from the start.** Retryability is a provider-specific
+judgment — I learned that from the error-semantics problem, but the retry policy stayed more global
+than it should have for longer than it should have. The adapter already knows what its provider's
+errors mean; that's where the decision belongs.
+
+**I'd build the observability before the first bad incident, not after it.** Knowing which provider
+was throttling, which files were retrying, and where a run was actually spending its time was
+something I wanted badly the first time a large operation misbehaved, and built properly only after.
+
+{/*
+  ── VERIFY BEFORE PUBLISH ────────────────────────────────────────────────
+  1. "No files lost" — this is the strongest claim on the site and the one
+     most likely to be probed. Only ship it if you can stand behind it
+     without qualification. If it needs a caveat, it needs to be reworded.
+  2. Confirm no employer, client, or product name appears anywhere.
+  ─────────────────────────────────────────────────────────────────────────
+*/}

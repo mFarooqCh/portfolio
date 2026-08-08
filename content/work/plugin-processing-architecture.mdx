@@ -1,0 +1,114 @@
+---
+title: "Rebuilding a tangled file-processing service into a plugin architecture"
+slug: "plugin-processing-architecture"
+summary: "Took a legacy service where nobody could predict what a change would break, and refactored it in place — on a system that never stopped running — into a plugin model that has since absorbed a 2.6x fleet increase without redesign."
+context: "A file-processing service handling thousands of operations per day"
+role: "Architecture, migration, and implementation"
+year: "2024"
+stack: [".NET 8", "C#", "MongoDB Change Streams", "Azure"]
+featured: true
+order: 3
+diagram: "/diagrams/plugin-processing-architecture.svg"
+relatedPosts: []
+---
+
+## The problem
+
+A legacy .NET Core 3.1 file-processing service that had grown without a defined architecture. The
+processing logic was tangled enough that the blast radius of any change was unknowable without reading
+most of the codebase.
+
+The practical cost wasn't that adding a new processing type was difficult. It was that nobody could
+say with confidence what adding one would break. That uncertainty is more expensive than difficulty —
+difficulty is a day of work, uncertainty is a permanent tax on every change anyone wants to make, and
+it compounds into a team that stops proposing changes at all.
+
+There was a second problem underneath it. Long-running work needed to stop when its input changed
+mid-flight, and in the legacy design it didn't. Processing that continued against an entry that had
+already changed wasn't just wasted compute — it was about to write stale output over current data.
+
+## Constraints
+
+**It had to keep running.** Live production, thousands of file-processing operations a day. There was
+no window in which processing could stop while its foundation was replaced.
+
+**Cancellation had to be surgical.** Stopping work for a changed entry could not disturb the other
+work in flight. A blunt cancellation mechanism would have been worse than none, because it would have
+made the system unpredictable in a new way.
+
+**Adding a processor could not mean touching the engine.** The whole point was to make the risky
+shared core stop being the thing you edit to add a feature.
+
+## Approach
+
+**A plugin execution model.** Processors derive from an abstract base class and are instantiated from
+configuration. Adding a processing type means writing one class and adding a config entry — the engine
+itself isn't modified, so the blast radius of a new processor is that processor.
+
+This is the actual answer to "nobody knows what this change will break." Not better documentation of
+the tangle, and not a rewrite that produces a cleaner tangle. A structure where the answer is obvious
+by construction, because the new code physically cannot reach the old code's execution path.
+
+**Change streams as the cancellation signal.** This is the part worth explaining, because it's a use
+of change streams that isn't the obvious one.
+
+Work dispatch still polls. What change streams provide is the *interrupt*: when an entry changes while
+its work is in flight, the change stream fires and cancels precisely that work. Cancellation tokens
+are scoped to the change stream entry, so a change to one asset cancels exactly the work for that
+asset and nothing else.
+
+The insight is that the interesting problem in this system was never how work starts. Work starting a
+few seconds late is a minor inefficiency. Work that should have stopped and didn't is a correctness
+bug that writes bad data — and that's the problem worth building a mechanism for.
+
+**Refactored in place.** No parallel system, no cutover event. Each step had to leave the service
+working, because the service was working the whole time and customers were using it.
+
+This is slower than a rewrite and considerably less satisfying. It's also the only approach that never
+has a moment where the new thing has to be right on the first attempt, in production, with everyone
+watching.
+
+## Outcome
+
+**Adding a processor no longer means editing the engine.** One class, one config entry. Existing
+processing paths are untouched, so the risk of an addition is bounded by construction rather than by
+how carefully someone read the codebase first.
+
+**In-flight work stops cleanly when its input changes.** Precise, per-entry cancellation, without
+disturbing anything else running. Stale output written over current data stopped being a failure mode.
+
+**The architecture absorbed a 2.6x fleet increase without redesign.** The worker fleet has grown from
+20 to 52 since the refactor, and the plugin model has scaled with it untouched. Surviving that kind of
+growth without needing rework is the real test of a structural decision, and it's a result that only
+becomes visible over time.
+
+**Migrated with no downtime and no cutover event.** The service processed files continuously
+throughout.
+
+## What I'd do differently
+
+**Work dispatch still polls, and it shouldn't.** The refactor solved structure and cancellation, and
+left dispatch as it was — a five-second poll loop, which means every operation still carries up to
+five seconds of dead time before it starts. Change streams already carry the cancellation signal, so
+the mechanism to make dispatch event-driven is sitting right there, unused for that purpose. It's the
+obvious next step and I'd sequence it into the original work rather than leaving it.
+
+**I'd have defined the plugin interface later than I did.** Committing to the abstraction before more
+than a couple of processor types existed meant fitting later processors to a shape derived from the
+first ones, rather than from the range they actually needed to cover.
+
+{/*
+  ── VERIFY BEFORE PUBLISH ────────────────────────────────────────────────
+  1. CORRECTED: earlier draft claimed polling was eliminated and ~900K daily
+     queries removed. That was WRONG — polling is still the dispatch
+     mechanism. Do not reinstate any version of that claim.
+  2. YOUR RESUME HAS THE SAME OVERCLAIM. It currently reads "using MongoDB
+     Change Streams to trigger worker execution in an event-driven manner,
+     replacing polling-based workflows." Change streams scope cancellation;
+     they do not replace dispatch. Fix the resume line before you send it
+     anywhere else.
+  3. Confirm change streams really are the cancellation signal as described
+     here — this page now rests on that.
+  4. Confirm no employer, client, or product name appears anywhere.
+  ─────────────────────────────────────────────────────────────────────────
+*/}

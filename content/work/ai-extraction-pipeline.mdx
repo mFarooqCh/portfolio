@@ -1,0 +1,114 @@
+---
+title: "Concurrent AI extraction pipeline with natural-language search"
+slug: "ai-extraction-pipeline"
+summary: "Made a 16 TB media library searchable by what's inside the assets, by running extraction models in parallel per asset instead of in sequence — cutting per-asset processing 3–4x and covering a library that had almost no usable metadata."
+context: "An enterprise media platform managing a 16 TB+ asset library"
+role: "Architecture and implementation"
+year: "2024–2025"
+stack: [".NET 8", "C#", "MongoDB", "Elasticsearch", "Vision LLMs", "DeepFace", "AWS Face API", "Azure"]
+featured: true
+order: 1
+diagram: "/diagrams/ai-extraction-pipeline.svg"
+relatedPosts: []
+---
+
+## The problem
+
+A media library past a certain size is only as useful as its metadata, and this one had almost none.
+Assets arrived faster than anyone could describe them, so the backlog had stopped being a backlog and
+become the permanent state. Users knew an asset existed somewhere. They could not find it.
+
+Describing the library by hand was not a staffing problem that had been under-resourced — it was work
+that would have required a dedicated team indefinitely, and would still have lost ground against
+ingest. The realistic options were to leave most of the library unsearchable or to extract the metadata
+automatically.
+
+## Constraints
+
+Three things shaped the design more than anything else.
+
+**Sequential extraction couldn't keep up with ingest.** Running each model against an asset one after
+another put the per-asset cost squarely above the rate at which assets arrived. Fixing this by adding
+workers would have scaled cost linearly against a problem that wasn't actually throughput-bound —
+it was ordering-bound.
+
+**The models fail.** Vision and face APIs time out, rate-limit, and return errors under exactly the
+load you care about. Any design that required all extractors to succeed before an asset became useful
+would have spent most of its time not producing results. Partial results had to yield a usable record.
+
+**Work had to stop mid-flight.** When an asset changed while it was being processed, the in-progress
+extraction was no longer just wasted — it was about to write stale data. Cancellation had to be
+precise enough to kill the work for one asset without disturbing anything else in flight.
+
+## Approach
+
+**Fan out, because nothing serialises the extractors.** Vision-LLM tagging, face detection, and
+summarization don't depend on each other's output — they each read the asset and produce independent
+facts about it. Running them in sequence was costing wall-clock time for no correctness benefit, so
+they run in parallel per asset and the per-asset time collapses to roughly the slowest extractor
+rather than the sum of all of them.
+
+**Converge into one record, and index what you have.** The independent results merge into a single
+unified record that syncs to a shared search index. The important decision is what happens when one
+extractor fails and the others succeed: the record indexes anyway with what completed, and the failed
+extractor retries separately. An asset becomes findable on its tags immediately even if its summary is
+still missing, and backfills when the retry lands.
+
+The alternative — hold everything until the full set succeeds — makes searchability hostage to the
+least reliable external API in the chain. Given how often those APIs fail, that trade wasn't close.
+
+**Deduplicate identities on a separate path.** Face detection produces detections, not people. The same
+person appears across thousands of assets, and a library where one person is a thousand unlinked
+identities is not meaningfully better than no face search at all. A separate matching and merge path
+collapses detections into distinct identities across the library, kept off the main extraction path so
+that identity work never blocks an asset from being indexed.
+
+## Making it searchable
+
+The extracted metadata feeds retrieval-augmented search: query embeddings against the shared index,
+reranking, then an LLM-generated answer over what came back.
+
+Reranking is the part worth explaining, because it's the part most implementations skip. Pure vector
+search returns assets that are *topically near* the query but wrong — semantically adjacent, factually
+not what was asked for. Embeddings match the general shape of a query, and for a large library the top
+results by raw vector similarity were consistently plausible and consistently not the answer.
+Reranking the candidate set fixes precision where it matters, in the handful of results anyone
+actually looks at.
+
+When retrieval doesn't surface anything relevant, the system degrades to showing raw search results
+rather than generating an answer over a weak candidate set. Users get matches to judge for themselves
+instead of a confident-sounding answer assembled from whatever happened to come back.
+
+## Outcome
+
+**Per-asset processing time dropped 3–4x** once extraction ran in parallel rather than in sequence —
+the direct result of per-asset cost converging on the slowest extractor instead of the sum.
+
+**Library coverage went from effectively nothing to effectively complete.** Before, almost no assets
+carried usable descriptive metadata. After, extraction runs against the library as a matter of course
+and returns tagged, searchable results in minutes.
+
+**The capability didn't previously exist at any staffing level.** Matching this output manually would
+have required a dedicated team working continuously, and it still wouldn't have kept pace with ingest.
+
+## What I'd do differently
+
+**I'd instrument cost from day one.** Per-asset spend across several model calls over a large library
+is a real bill, and I didn't treat it as a design constraint up front — it became visible after volume
+arrived rather than before. Everything else on this page I designed for; that one I reacted to. If I
+built it again, cost per asset would be a first-class metric alongside latency, not something surfaced
+by an invoice.
+
+**I'd revisit the model choices.** The field moved fast enough that several of the extraction models
+have cheaper or more capable replacements now. The architecture holds up — the fan-out and convergence
+don't care which models sit behind them, which was the point — but the specific models I'd choose today
+are not the ones I chose then.
+
+{/*
+  ── VERIFY BEFORE PUBLISH ────────────────────────────────────────────────
+  1. "3–4x" — confirm this is defensible. A technical buyer will ask how you
+     measured it. Have the answer ready.
+  2. Confirm the dedup path really is off the critical path as described.
+  3. Confirm no employer, client, or product name appears anywhere above.
+  ─────────────────────────────────────────────────────────────────────────
+*/}

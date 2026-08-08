@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-bg text-fg antialiased;
+    font-feature-settings: 'kern' 1;
+  }
+  ::selection { @apply bg-accent/25; }
+}
+
+@layer components {
+  /* Long-form case study body. Typography-first: generous rhythm, tight measure. */
+  .prose-case { @apply max-w-measure; }
+  .prose-case h2 {
+    @apply mt-16 mb-5 font-mono text-xs uppercase tracking-[0.18em] text-accent;
+  }
+  .prose-case p { @apply mb-6 leading-[1.75] text-fg/80; }
+  .prose-case strong { @apply font-semibold text-fg; }
+  .prose-case ul { @apply mb-6 space-y-2 pl-5; }
+  .prose-case li { @apply list-disc leading-[1.75] text-fg/80 marker:text-border; }
+  .prose-case em { @apply italic text-fg/90; }
+}
+
+/* Motion: fade-and-rise only, and never for people who asked not to see it. */
+@media (prefers-reduced-motion: no-preference) {
+  .rise { animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+}
