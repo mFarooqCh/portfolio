@@ -8,6 +8,7 @@ const FACTS = [
   { n: '11', l: 'cloud storage providers integrated' },
   { n: '80K', l: 'files per transfer operation' },
   { n: '6 yrs', l: 'shipping .NET in production' },
+  { n: '2', l: 'real businesses running my own product' },
 ];
 
 const APPROACH = [
@@ -98,8 +99,9 @@ export default function Home() {
       {/* Work */}
       <Section id="work" label="Selected work">
         <p className="mb-10 max-w-measure leading-relaxed text-fg/70">
-          Three systems, described by what they had to survive rather than what they were built with.
-          Client details are omitted deliberately; the engineering is the point.
+          Five systems, described by what they had to survive rather than what they were built with.
+          Four are client work — details are omitted deliberately; the engineering is the point. One is
+          my own product, built and shipped solo, now run by two real businesses.
         </p>
         <div>
           {work.map((w) => (

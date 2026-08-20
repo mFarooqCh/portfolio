@@ -1,0 +1,159 @@
+---
+title: "An offline-first cashbook, built solo and now run by two real businesses"
+slug: "elegen-cashbook"
+summary: "A native Android ledger app that works with no account and no connection, syncs cleanly the moment it has one, and has been handling two real businesses' daily cash tracking in production — architecture, backend, and RBAC, all mine end to end."
+context: "A self-initiated product: an offline-first Android cashbook, no employer, no client — built and shipped solo"
+role: "Sole architect and developer — design, backend, Android, and ongoing production support"
+year: "2025–2026"
+stack: ["Kotlin", "Android", "Room", "Supabase", "PostgreSQL", "Row-Level Security", "WorkManager", "MVVM", "Clean Architecture"]
+featured: true
+order: 4
+diagram: "/diagrams/elegen-cashbook-sync.svg"
+relatedPosts: []
+---
+
+## The problem
+
+Small businesses track cash the way they always have — a notebook, or a phone note, or nothing
+consistent at all. The apps built to replace that assume a phone that's always online, which is a bad
+assumption for the exact users who need this most: a shopkeeper whose connection drops mid-afternoon
+shouldn't lose the ability to log a sale.
+
+I set out to build the version that doesn't make that trade — offline by default, syncing when it can,
+and shareable across a small team without turning into a spreadsheet full of conflicting edits. Unlike
+the case studies elsewhere on this page, there's no employer or client to omit here. This one is mine:
+I designed it, built it, run the backend for it, and two real businesses use it daily to track cash in
+and cash out.
+
+## Constraints
+
+**It has to be fully usable with no account and no connection.** Requiring sign-in before the app is
+useful is the single biggest reason these tools get abandoned. Every core flow — create a business, log
+a transaction, see a balance — had to work before Supabase ever entered the picture, and stay working
+if it never does.
+
+**Money can never be a float.** A ledger that's off by a paisa on rounding isn't a rounding error, it's
+a bug report from someone reconciling cash by hand. Every amount had to be exact, all the way through.
+
+**Sharing meant real permissions, not a shared password.** A business owner needed to bring in staff
+without handing over full control — someone who can add entries to one book but not see another, or
+see everything but change nothing. That's a server-enforced guarantee, not a UI toggle, or it's not a
+guarantee at all.
+
+**Zero budget, and it had to stay that way.** This was self-funded from day one. Firebase's Cloud
+Functions — the natural choice for server-side logic — require the paid Blaze plan. That ruled it out
+before evaluating anything else technical about it.
+
+## Approach
+
+**Room as the only source of truth.** The app never reads from the network — every screen reads Room,
+full stop. Writes land in Room first and are queued for sync separately, so "no connection" isn't a
+degraded mode the app has to handle; it's just the normal case with one extra step deferred.
+
+**An outbox instead of a sync-on-write.** Every entity write happens in the same local transaction as
+an outbox row recording that it needs to go up. A background worker drains the outbox in order —
+exponential backoff on failure, a dead-letter state after repeated failures so one bad row can't jam
+the queue behind it. A phone that goes into airplane mode mid-edit and comes back an hour later just
+resumes; nothing was lost because nothing was ever assumed to have sent.
+
+**Pull sync with last-write-wins, plus Realtime as a latency improvement, not a dependency.** A
+delta-fetch cursor per entity type pulls whatever changed since last time; a periodic background pull
+is the reliable path, and a live Postgres-changes subscription rides on top of it purely to make a
+foregrounded second device feel instant. If Realtime never delivered a single event, the app would
+still converge correctly — it would just take up to the next pull interval to do it. Conflicts resolve
+on last-write-wins with a device-id tiebreak, which is simple enough to reason about and matches how
+these businesses actually work: two people rarely edit the same entry within seconds of each other, and
+when they do, losing a few seconds of edit history is a fair trade against the alternative of a
+conflict dialog nobody would understand.
+
+**Permissions enforced in Postgres, not trusted from the client.** Business-level roles (owner / admin /
+viewer) plus per-book overrides are checked server-side via row-level security and a small set of
+`SECURITY DEFINER` functions the client calls but can't bypass. Row-level security alone couldn't
+express everything needed — it can't distinguish "editing a book" from "deleting a book" on the same
+row — so a set of trigger-enforced checks sits on top of it for the splits RLS can't make. The client
+holds a read-only mirror of the same permission logic purely so the UI can grey out a button before the
+round trip; the server check is what actually gates the write.
+
+**Zero-cost backend by architecture, not by luck.** Choosing Supabase over Firebase meant the
+authorization logic had to live in Postgres itself rather than in cloud functions — row-level security
+policies and a handful of `SECURITY DEFINER` RPCs instead of a serverless backend. That constraint
+shaped the whole permission system, and it's the reason the product has run since day one without a
+hosting bill.
+
+## What real usage found that testing didn't
+
+The permission suite passed every automated check before a second real account ever touched the app —
+and real two-account testing still turned up bugs the tests couldn't see, because they were about what
+the *repository layer* trusted, not what the database allowed.
+
+The sharpest one: the repository methods predated the permission system and still checked raw
+ownership only — "is this my book?" — with no awareness that a share could grant someone else access.
+A viewer's rename silently did nothing. Duplicating a book they could see but not edit crashed the app
+outright, on an uncaught null. The database-level security was correct the whole time; the layer above
+it had never been taught the database's rules existed. Fixed by routing every mutation through the same
+permission check the server enforces, so the two layers finally agree — and as a side effect, a
+legitimate admin who didn't personally own a shared book gained back an action that raw ownership had
+wrongly been blocking too.
+
+The other one worth naming: every first-time write from a brand-new account was silently rejected.
+The client's upsert compiles to `INSERT ... ON CONFLICT DO UPDATE`, and Postgres requires the row to
+satisfy the *read* policy to check for a conflict — even when there is no conflict, because the row has
+never existed. The permission policies all gated on membership rows that themselves only get created
+by that same first write: a chicken-and-egg lock that blocked every new business from ever reaching the
+server. It never showed up in the policy test suite, because those tests seeded fixtures directly and
+never exercised a real first-time insert from an ordinary account. Fixed by OR-ing an ownership fallback
+into the read policies, scoped narrowly enough that the fine-grained permission checks — which only
+fire on genuine updates — were untouched.
+
+Both bugs were invisible to unit tests and passing server-side policy checks alike. They only existed
+in the gap between two systems that were each individually correct. That gap is where I now assume the
+real bugs live, and it changed how I test permission systems since: prove the client and the server
+agree, not just that either one is right in isolation.
+
+## Outcome
+
+**Runs fully offline, with sync as an addition rather than a requirement.** Every core flow works with
+no account and no connection; sync layers on top without the app ever depending on it being available.
+
+**Two real businesses run their daily cash tracking on it.** Not a demo, not a personal test — people
+who need their balances to be correct use it every day, and that has been the real proof gate the whole
+build has been accountable to.
+
+**No transaction has been lost.** The outbox has survived kill-mid-sync and airplane-mode round trips
+in testing without dropping a write, which is the one guarantee this category of app can't ship without.
+
+**Money never leaves exact arithmetic.** Every amount is a fixed-point integer, checked by a grep rule
+in the build itself — zero floating-point types anywhere in the money path.
+
+**A permission system enforced twice, correctly.** The client mirrors the server's rules for a
+responsive UI, and the server enforces them for real — after the fixes above, the two never disagree.
+
+## What I'd do differently
+
+**I'd write the client-side permission checks against the server's rules from day one**, instead of
+adding them after the repository layer already existed with its own, older idea of what "access" meant.
+Both real bugs above trace back to the same root: two layers built at different times, each individually
+tested, that had quietly stopped agreeing. Building the client checks as a direct mirror of the server
+logic from the start — rather than retrofitting them once sharing existed — would have caught both
+before a second real account ever found them.
+
+**I'd instrument the sync queue's health from the first release**, not after wanting to know why a
+device was behind. Knowing queue depth and dead-letter counts in production is the kind of visibility
+that's cheap to build early and annoying to reconstruct later.
+
+{/*
+  ── VERIFY BEFORE PUBLISH ────────────────────────────────────────────────
+  1. Confirm "two real businesses" is still accurate at publish time and
+     you're comfortable with that exact phrasing (no names, no identifying
+     detail — matches the anonymity call already made).
+  2. Confirm the airplane-mode / kill-mid-sync claims are from real proof-gate
+     runs you can describe if asked on a call (they are, per handoff notes —
+     just re-confirm before shipping the copy).
+  3. Needs an architecture diagram — same as the other three case studies —
+     before this goes live. Redraw generically: outbox → worker → Postgres,
+     RLS/RPC layer, Realtime as a dotted "latency only" path.
+  4. Needs at least one supporting blog post per the site's proof strategy
+     (PLAN.md) — the RLS upsert deadlock or the client/server permission-
+     agreement bug are both strong candidates.
+  ─────────────────────────────────────────────────────────────────────────
+*/}

@@ -1,0 +1,136 @@
+---
+title: "Giving a live multi-tenant ERP real foundations, without a rewrite"
+slug: "erp-multi-tenant-foundations"
+summary: "A freelance architecture engagement on a live multi-tenant ERP — introduced dependency injection, replaced raw ADO.NET with EF Core and real migrations across a fleet of per-tenant databases, and cut new-customer onboarding from 2–3 days to minutes, all without touching the per-tenant isolation model that already worked."
+context: "A multi-tenant ERP for small manufacturing and hospitality businesses — textile mills, commercial kitchens, banquet halls"
+role: "Software architect — freelance engagement, leading the redesign alongside an existing 4-person team"
+year: "2025"
+stack: [".NET", "C#", "Entity Framework Core", "ADO.NET", "Dependency Injection", "SQL Server"]
+featured: true
+order: 5
+diagram: "/diagrams/erp-multi-tenant-foundations.svg"
+relatedPosts: []
+---
+
+## The problem
+
+An ERP already running for 10–15 customers — small manufacturing and hospitality businesses tracking
+their own inventory, orders, and finances — had reached the point where every new feature cost more
+than the last one. The codebase wasn't readable enough for the existing team to move quickly in, the
+app leaked memory and hung under normal use, and bringing on a new customer meant two to three days of
+someone manually setting up a database by hand. None of that is unusual for a system that grew for
+years under deadline pressure. What made it worth fixing rather than replacing was that it was already
+correct where it counted: the business logic worked, and ten-plus paying customers depended on it
+staying that way.
+
+I came in as a freelance architect for three months, working alongside the team that already owned
+it — one senior developer, one junior developer, a front-end developer, and QA — to redesign the
+foundations underneath a system that couldn't stop running while I did it.
+
+## Constraints
+
+**It had to keep serving live customers throughout.** Ten to fifteen businesses were running their
+day-to-day operations on this system. There was no maintenance window long enough to rebuild it, and
+no acceptable version of "it'll be back up once the migration finishes."
+
+**The per-tenant database model was already right — the code just fought it.** Each customer had their
+own database, which was the correct call for a system where a mill's inventory data has no business
+anywhere near a banquet hall's. That wasn't the problem. The problem was a single class managing
+tenant switching directly, wired by hand everywhere it was needed, with no clean way to test or reason
+about it in isolation.
+
+**Raw ADO.NET meant every connection and reader was someone's manual responsibility.** No ORM, no
+consistent disposal pattern, across a codebase with years of contributors. The "memory leaks and
+hangs" symptom wasn't a mystery once you saw how connections were being opened — it was a direct
+consequence of how much of that was left to convention instead of the framework.
+
+**The schema existed nowhere except in ten to fifteen live databases.** No migration history had ever
+been established. What documentation existed had drifted out of sync with what the code actually did,
+which meant it was worse than no documentation — it actively misled. Any schema change was a manual SQL
+script, run by hand, once per tenant database, with no record afterward of what had been applied where.
+
+**Whatever I built had to outlive the engagement.** Three months, then the existing team kept
+maintaining it without me. A clever solution only one person understands is a liability with a delay on
+it — the senior and junior developer needed to be able to extend this after I left, not just admire it.
+
+## Approach
+
+**Kept the tenant-per-database model, replaced how the code reached it.** The instinct behind the
+original God class — one place that knows how to resolve the current tenant — was sound. The problem
+was implementation, not design: it was ambient, manually wired state instead of an injected dependency.
+Introducing DI meant tenant resolution became a scoped service the rest of the app consumed properly,
+instead of a shared class every feature reached into directly. Same seam, kept on purpose; the coupling
+around it is what got removed.
+
+**Rebuilt the domain model from what the system actually did, not from what the schema claimed.** With
+the documented schema unreliable, the real source of truth was the code already running against the
+data. Entity classes were recreated from that — the models already in use, not a fresh guess — and
+moved onto EF Core, which is what made a real migration history possible for the first time.
+
+**Treated migrations as a fleet problem, not a single-database problem.** Ten to fifteen physically
+separate but identically shaped databases meant "apply this migration" had to mean applying it
+consistently across all of them, not once. That's the part a single hand-run SQL script was never going
+to survive at this count — it was only ever a matter of time before one tenant's database quietly
+drifted from the rest.
+
+**Turned new-customer setup into an API instead of a checklist.** Provisioning used to mean someone
+manually creating a database, applying the schema by hand, and seeding it — the two-to-three-day
+onboarding was that process, done carefully, by a person. Rebuilt as a small web app that calls an API
+to provision a tenant end-to-end: new database, schema applied through the now-real migration pipeline,
+reference data seeded. What used to take days now takes minutes, and doesn't require anyone available
+to run it.
+
+**Added logging, alerting, and — mid-engagement — a whole new approval module**, because a customer
+asked for one that hadn't existed before. That request landed after the architecture work was already
+in place, which made it the actual test of whether the redesign held up: a requirement nobody had
+designed around from day one, absorbed as a new module rather than conditional logic threaded through
+existing ones.
+
+## Outcome
+
+**New-customer onboarding went from two to three days to minutes.** The manual database setup that used
+to be the bottleneck is now a self-serve provisioning call.
+
+**A real migration history exists where none did before**, applied consistently across every tenant
+database rather than tracked nowhere and hand-run per customer.
+
+**The team kept shipping on it after I left.** The point of the engagement wasn't a redesign only I
+could maintain — it was one the senior and junior developer already on the team could extend, and did.
+
+**A new module — approval workflow — shipped mid-engagement**, requested by a customer after the
+foundational work was done, and absorbed without reworking what already existed.
+
+**Code that used to be hard to move in got easier to move in.** Less precisely measurable than the
+onboarding number, but it's the reason new module work sped up and features stopped taking longer than
+they should have.
+
+## What I'd do differently
+
+**I'd build drift detection across the tenant fleet from the start, not just the migration pipeline
+itself.** The original problem was a schema that had quietly gone out of sync with reality across
+multiple databases with no one noticing until it caused a bug. A real migration history mostly prevents
+that going forward, but "mostly" isn't "provably" — I'd add a way to actually confirm all ten-plus
+databases agree with what the pipeline thinks it applied, rather than trusting that they do.
+
+**I'd pair the junior developer on the DI and migration patterns earlier, not mostly toward the end.**
+The goal was never architecture that was merely correct — it was architecture this specific team could
+sustain once I was gone. That only really gets tested by someone other than the architect using it, and
+I'd want that feedback loop running in month one, not month three.
+
+{/*
+  ── VERIFY BEFORE PUBLISH ────────────────────────────────────────────────
+  1. Confirm "year: 2025" — I don't actually know when this engagement ran;
+     set from context, replace with the real year (or year range).
+  2. Confirm "SQL Server" in the stack — I inferred this from EF Core +
+     per-tenant database being a common pairing. If it was PostgreSQL, MySQL,
+     or something else, correct it.
+  3. Confirm the "2–3 days to minutes" onboarding claim in this exact
+     wording — this is the strongest number on the page and the one most
+     likely to get asked about on a call.
+  4. Confirm no employer, client, or product name appears anywhere above,
+     and that "textile mills, commercial kitchens, banquet halls" is
+     generic enough — adjust if it's specific enough to identify the client.
+  5. Needs an architecture diagram and a supporting blog post, same as the
+     other case studies (see PLAN.md).
+  ─────────────────────────────────────────────────────────────────────────
+*/}
