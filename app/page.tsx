@@ -86,7 +86,7 @@ export default function Home() {
 
       {/* Facts */}
       <div className="mx-auto max-w-5xl px-6">
-        <dl className="grid grid-cols-2 gap-px border border-border bg-border sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-px border border-border bg-border sm:grid-cols-5">
           {FACTS.map((f) => (
             <div key={f.l} className="bg-bg px-5 py-6">
               <dt className="font-mono text-2xl text-fg">{f.n}</dt>
