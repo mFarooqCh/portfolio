@@ -47,7 +47,7 @@ export default function Home() {
       {/* Hero */}
       <section className="mx-auto max-w-5xl px-6 pb-16 pt-24 sm:pt-32">
         <div className="rise">
-          <p className="mb-6 flex items-center gap-2 font-mono text-xs text-accent">
+          <p className="mb-6 flex items-center gap-2 font-mono text-xs text-accent-text">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" />
             Available for new projects
           </p>
@@ -70,7 +70,7 @@ export default function Home() {
           <div className="mt-10 flex flex-wrap gap-4">
             <a
               href="#work"
-              className="border border-accent px-5 py-2.5 font-mono text-sm text-accent transition-colors hover:bg-accent hover:text-bg"
+              className="border border-accent-text px-5 py-2.5 font-mono text-sm text-accent-text transition-colors hover:bg-accent hover:text-bg"
             >
               See the work →
             </a>
@@ -127,7 +127,7 @@ export default function Home() {
         <div className="grid gap-px border border-border bg-border sm:grid-cols-2">
           {CAPABILITIES.map(([h, p]) => (
             <div key={h} className="bg-bg p-6">
-              <h3 className="mb-2 font-mono text-sm text-accent">{h}</h3>
+              <h3 className="mb-2 font-mono text-sm text-accent-text">{h}</h3>
               <p className="text-sm leading-relaxed text-fg/65">{p}</p>
             </div>
           ))}
@@ -168,7 +168,7 @@ export default function Home() {
         */}
         <a
           href="mailto:farooqchaudhry749@gmail.com"
-          className="inline-block border border-accent px-5 py-2.5 font-mono text-sm text-accent transition-colors hover:bg-accent hover:text-bg"
+          className="inline-block border border-accent-text px-5 py-2.5 font-mono text-sm text-accent-text transition-colors hover:bg-accent hover:text-bg"
         >
           farooqchaudhry749@gmail.com
         </a>

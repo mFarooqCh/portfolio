@@ -15,7 +15,7 @@
   /* Long-form case study body. Typography-first: generous rhythm, tight measure. */
   .prose-case { @apply max-w-measure; }
   .prose-case h2 {
-    @apply mt-16 mb-5 font-mono text-xs uppercase tracking-[0.18em] text-accent;
+    @apply mt-16 mb-5 font-mono text-xs uppercase tracking-[0.18em] text-accent-text;
   }
   .prose-case p { @apply mb-6 leading-[1.75] text-fg/80; }
   .prose-case strong { @apply font-semibold text-fg; }

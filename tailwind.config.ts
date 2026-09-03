@@ -11,6 +11,7 @@ export default {
         muted:   '#8a8a94',
         fg:      '#e8e8ea',
         accent:  '#4ade80',
+        'accent-text': '#71cda7',
       },
       fontFamily: {
         sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],

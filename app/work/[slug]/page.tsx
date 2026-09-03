@@ -21,7 +21,7 @@ export default function WorkPage({ params }: { params: { slug: string } }) {
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-16">
-      <Link href="/#work" className="font-mono text-xs text-muted hover:text-accent">
+      <Link href="/#work" className="font-mono text-xs text-muted hover:text-accent-text">
         ← all work
       </Link>
 
@@ -59,7 +59,7 @@ export default function WorkPage({ params }: { params: { slug: string } }) {
         </p>
         <Link
           href="/#contact"
-          className="inline-block border border-accent px-5 py-2.5 font-mono text-sm text-accent transition-colors hover:bg-accent hover:text-bg"
+          className="inline-block border border-accent-text px-5 py-2.5 font-mono text-sm text-accent-text transition-colors hover:bg-accent hover:text-bg"
         >
           Start a conversation →
         </Link>

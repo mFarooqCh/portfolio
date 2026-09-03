@@ -39,7 +39,7 @@ export function BackToTop() {
       onClick={handleClick}
       aria-label="Back to top"
       tabIndex={visible ? 0 : -1}
-      className={`fixed bottom-6 right-6 z-40 flex h-10 w-10 items-center justify-center border border-accent bg-bg text-accent transition-all duration-200 hover:bg-accent hover:text-bg ${
+      className={`fixed bottom-6 right-6 z-40 flex h-10 w-10 items-center justify-center border border-accent-text bg-bg text-accent-text transition-all duration-200 hover:bg-accent hover:text-bg ${
         visible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
       }`}
     >

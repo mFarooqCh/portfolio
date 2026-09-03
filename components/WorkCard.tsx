@@ -13,7 +13,7 @@ export function WorkCard({ meta }: { meta: WorkMeta }) {
         <span>{meta.context}</span>
       </div>
 
-      <h3 className="mb-3 text-xl font-medium leading-snug text-fg group-hover:text-accent sm:text-2xl">
+      <h3 className="mb-3 text-xl font-medium leading-snug text-fg group-hover:text-accent-text sm:text-2xl">
         {meta.title}
       </h3>
 
