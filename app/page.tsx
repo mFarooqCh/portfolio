@@ -166,12 +166,20 @@ export default function Home() {
           A freelance site whose contact form silently fails is worse than useless.
           Verify delivery to a real inbox before launch, and again after the domain is attached.
         */}
-        <a
-          href="mailto:farooqchaudhry749@gmail.com"
-          className="inline-block border border-accent-text px-5 py-2.5 font-mono text-sm text-accent-text transition-colors hover:bg-accent hover:text-bg"
-        >
-          farooqchaudhry749@gmail.com
-        </a>
+        <div className="flex flex-wrap gap-4">
+          <a
+            href="mailto:farooqchaudhry749@gmail.com"
+            className="inline-block border border-accent-text px-5 py-2.5 font-mono text-sm text-accent-text transition-colors hover:bg-accent hover:text-bg"
+          >
+            farooqchaudhry749@gmail.com
+          </a>
+          <a
+            href="https://wa.me/923171120889?text=Hi%20there%2C%20I%20want%20to%20know%20more%20about%20your%20services."
+            className="inline-block border border-accent-text px-5 py-2.5 font-mono text-sm text-accent-text transition-colors hover:bg-accent hover:text-bg"
+          >
+            WhatsApp
+          </a>
+        </div>
       </Section>
     </main>
   );
