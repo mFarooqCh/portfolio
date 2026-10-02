@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
-import Link from 'next/link';
+import { SectionNavigation } from '@/components/SectionNavigation';
 import { Logo } from '@/components/Logo';
 import { BackToTop } from '@/components/BackToTop';
 import './globals.css';
@@ -16,14 +16,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body>
-        <header className="border-b border-border/60">
-          <nav className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-5">
+        <header className="sticky top-0 z-50 border-b border-border/60 bg-bg/95 backdrop-blur">
+          <nav aria-label="Main navigation" className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
             <Logo />
-            <div className="flex flex-shrink-0 items-center gap-6 font-mono text-xs text-muted">
-              <Link href="/#work" className="hover:text-fg">work</Link>
-              <Link href="/#approach" className="hover:text-fg">approach</Link>
-              <Link href="/#contact" className="hover:text-fg">contact</Link>
-            </div>
+            <SectionNavigation />
           </nav>
         </header>
 

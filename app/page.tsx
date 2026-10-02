@@ -2,6 +2,7 @@ import { getAllWork } from '@/lib/content';
 import { Section } from '@/components/Section';
 import { WorkCard } from '@/components/WorkCard';
 import experience from '@/content/experience.json';
+import Image from 'next/image';
 
 const FACTS = [
   { n: '16 TB+', l: 'media platform in production' },
@@ -45,29 +46,39 @@ export default function Home() {
   return (
     <main>
       {/* Hero */}
-      <section className="mx-auto max-w-5xl px-6 pb-16 pt-24 sm:pt-32">
-        <div className="rise">
+      <section className="mx-auto max-w-5xl px-6 pb-16 pt-10 sm:pt-16">
+        <div className="rise grid gap-x-10 lg:grid-cols-[1fr_260px]">
           <p className="mb-6 flex items-center gap-2 font-mono text-xs text-accent-text">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" />
             Available for new projects
           </p>
 
-          <h1 className="max-w-3xl text-4xl font-medium leading-[1.15] tracking-tight sm:text-5xl">
+          <Image
+            src="/farooq-portrait.jpg"
+            alt="Muhammad Farooq Chaudhry"
+            width={960}
+            height={1280}
+            priority
+            sizes="(min-width: 1024px) 260px, 112px"
+            className="mb-6 h-28 w-28 rounded-lg border border-border object-cover object-top lg:col-start-2 lg:row-start-1 lg:row-span-5 lg:mb-0 lg:mt-8 lg:h-[300px] lg:w-[260px]"
+          />
+
+          <h1 className="max-w-3xl text-4xl font-medium leading-[1.15] tracking-tight sm:text-5xl lg:col-start-1">
             Your backend works. It just won&apos;t survive what&apos;s coming next.
           </h1>
 
-          <p className="mt-8 max-w-measure text-lg leading-[1.7] text-fg/75">
+          <p className="mt-8 max-w-measure text-lg leading-[1.7] text-fg/75 lg:col-start-1">
             I design and build systems for the point where the simple version stops holding —
             high-throughput file processing, multi-cloud infrastructure, and AI pipelines running
             under real production load, not as demos.
           </p>
 
-          <p className="mt-5 max-w-measure leading-[1.7] text-fg/60">
+          <p className="mt-5 max-w-measure leading-[1.7] text-fg/60 lg:col-start-1">
             Six years shipping .NET for SaaS, ERP, and enterprise media platforms. I own problems end
             to end: design, build, deploy, secure, maintain.
           </p>
 
-          <div className="mt-10 flex flex-wrap gap-4">
+          <div className="mt-10 flex flex-wrap gap-4 lg:col-start-1">
             <a
               href="#work"
               className="border border-accent-text px-5 py-2.5 font-mono text-sm text-accent-text transition-colors hover:bg-accent hover:text-bg"
@@ -123,7 +134,7 @@ export default function Home() {
       </Section>
 
       {/* Capabilities */}
-      <Section label="Capabilities">
+      <Section id="capabilities" label="Capabilities">
         <div className="grid gap-px border border-border bg-border sm:grid-cols-2">
           {CAPABILITIES.map(([h, p]) => (
             <div key={h} className="bg-bg p-6">
@@ -135,7 +146,7 @@ export default function Home() {
       </Section>
 
       {/* Experience */}
-      <Section label="Experience">
+      <Section id="experience" label="Experience">
         <ol className="space-y-8">
           {experience.map((e) => (
             <li key={`${e.company}-${e.start}`} className="border-t border-border pt-5">
@@ -151,6 +162,31 @@ export default function Home() {
             </li>
           ))}
         </ol>
+      </Section>
+
+      <Section id="about" label="About">
+        <div className="grid items-center gap-8 sm:grid-cols-[240px_1fr] sm:gap-12">
+          <Image
+            src="/farooq-outdoors.jpg"
+            alt="Muhammad Farooq Chaudhry beside a river in the mountains"
+            width={1280}
+            height={1280}
+            sizes="(min-width: 640px) 240px, calc(100vw - 48px)"
+            className="aspect-square w-full rounded-lg border border-border object-cover"
+          />
+          <div>
+            <h3 className="mb-4 text-2xl font-medium tracking-tight">A little about me</h3>
+            <p className="leading-relaxed text-fg/70">
+              I&apos;m Muhammad Farooq Chaudhry, a backend and cloud engineer. I work on
+              the systems behind the interface: moving data, connecting services, and
+              keeping applications running as they grow.
+            </p>
+            <p className="mt-4 leading-relaxed text-fg/70">
+              I value straightforward conversations, practical decisions, and taking
+              responsibility for the work from the first discussion through to production.
+            </p>
+          </div>
+        </div>
       </Section>
 
       {/* Contact */}
